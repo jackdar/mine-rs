@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 // Define the CLI arguments using clap
 #[derive(Parser)]
-#[command(author, version, about = "A simple Minecraft server manager")]
+#[command(author, version, about = "A simple Minecraft server manager", long_about = None)]
 struct Cli {
     /// Server name
     #[arg(short, long, default_value = "minecraft-server")]
@@ -31,6 +31,36 @@ struct ServerConfig {
     mc_version: String,
     jar: String,
     port: u16,
+}
+
+// Create a docker-compose file
+fn create_docker_compose(dir: &PathBuf, config: &ServerConfig) {
+    // Define docker-compose as a string
+    let docker_compose = format!(
+        r#"services:
+  minecraft:
+    image: itzg/minecraft-server:latest
+    container_name: mc-{}
+    ports:
+      - {}:25565
+    environment:
+      - EULA=TRUE
+      - TYPE={}
+      - VERSION={}
+      - PAPER_CHANNEL=EXPERIMENTAL
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+"#,
+        config.name.to_lowercase(),
+        config.port,
+        config.jar.to_uppercase(),
+        config.mc_version
+    );
+
+    // Write docker-compose file
+    fs::write(dir.join("docker-compose.yml"), docker_compose)
+        .expect("Failed to write docker-compose.yml file");
 }
 
 fn main() {
@@ -61,5 +91,12 @@ fn main() {
     // Write config to file
     fs::write(server_dir.join("server.toml"), toml_string).expect("Failed to write config file");
 
+    // Create docker-compose file
+    create_docker_compose(&server_dir, &config);
+
     println!("Server created at: {}", server_dir.display());
+    println!(
+        "To start the server: cd {} && docker-compose up -d",
+        server_dir.display()
+    );
 }
