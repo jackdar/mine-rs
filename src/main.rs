@@ -1,5 +1,6 @@
 use clap::Parser;
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -64,7 +65,7 @@ fn create_docker_compose(dir: &Path, config: &ServerConfig) {
         .expect("Failed to write docker-compose.yml file");
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     // Parse CLI arguments
     let args = Cli::parse();
 
@@ -73,16 +74,16 @@ fn main() {
             let path = PathBuf::from(name);
 
             if !path.exists() {
-                fs::create_dir_all(&path).unwrap();
+                fs::create_dir_all(&path)?;
                 println!("Created new directory: {}", path.display());
             }
 
             path
         }
-        None => std::env::current_dir().unwrap(),
+        None => std::env::current_dir()?,
     };
 
-    let is_empty = fs::read_dir(&server_path).unwrap().next().is_none();
+    let is_empty = fs::read_dir(&server_path)?.next().is_none();
 
     if !is_empty {
         println!(
@@ -130,4 +131,6 @@ fn main() {
         "To start the server: cd {} && docker-compose up -d",
         server_path.display()
     );
+
+    Ok(())
 }
