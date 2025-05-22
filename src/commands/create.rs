@@ -58,7 +58,15 @@ pub fn run(args: Args) -> Result<(), Box<dyn Error>> {
             "Warning: Directory '{}' is not empty!",
             server_dir.display()
         );
-        // TODO: Confirm creation with user.
+        // Confirm with the user if they want to continue
+        let confirm = dialoguer::Confirm::new()
+            .with_prompt("Do you want to continue?")
+            .default(false)
+            .interact()?;
+        if !confirm {
+            println!("Cancelled!");
+            return Ok(());
+        }
     }
 
     let name = server_dir
